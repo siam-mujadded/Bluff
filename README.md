@@ -28,6 +28,24 @@ Open `http://localhost:3000` in your browser. Share the room code with friends s
 
 6. **Winning** -- First player to empty their hand wins!
 
+## Deploy to Render (Free Hosting)
+
+You can host this game for free on [Render.com](https://render.com) so anyone with the link can play:
+
+1. Push this repository to GitHub (if not already).
+2. Go to [render.com](https://render.com) and sign up (free -- use "Sign in with GitHub").
+3. Click **New** > **Web Service**.
+4. Connect your GitHub repository containing this project.
+5. Render auto-detects the `render.yaml` and fills in the build/start settings:
+   - **Build Command**: `npm install`
+   - **Start Command**: `node server/index.js`
+6. Select the **Free** instance type.
+7. Click **Create Web Service**.
+8. Wait 1-2 minutes for the build to complete.
+9. Render gives you a URL like `https://bluff-card-game-xxxx.onrender.com` -- share it with your friends!
+
+**Note**: The free tier spins down after 15 minutes of inactivity. The first visit after idle takes ~30-60 seconds to cold-start.
+
 ## Tech Stack
 
 - **Backend**: Node.js, Express, Socket.io

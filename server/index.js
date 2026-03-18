@@ -175,7 +175,6 @@ io.on('connection', (socket) => {
       callerName: result.callerName,
       accusedName: result.accusedName,
       bluffDetected: result.bluffDetected,
-      revealedCards: result.revealedCards,
       boardCardCount: result.boardCardCount,
       loserIndex: result.loserIndex,
       winnerIndex: result.winnerIndex,
@@ -212,6 +211,26 @@ io.on('connection', (socket) => {
     if (result.gameOver) {
       io.to(roomCode).emit('game-over', { winner: result.winner });
     }
+  });
+
+  socket.on('chat-message', ({ roomCode, message }) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room) return;
+    let senderName = null;
+    const lobbyP = room.players.find(p => p.id === socket.id);
+    if (lobbyP) senderName = lobbyP.name;
+    if (!senderName && room.gameState) {
+      const gsP = room.gameState.players.find(p => p.id === socket.id);
+      if (gsP) senderName = gsP.name;
+    }
+    if (!senderName) return;
+    const text = (message || '').trim().slice(0, 300);
+    if (!text) return;
+    socket.broadcast.to(roomCode).emit('chat-message', {
+      sender: senderName,
+      text,
+      timestamp: Date.now(),
+    });
   });
 
   socket.on('disconnect', () => {
@@ -275,6 +294,6 @@ function autoPassDisconnected(roomCode, gs, playerIndex) {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Bluff server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Bluff server running on port ${PORT}`);
 });

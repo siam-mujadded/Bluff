@@ -24,7 +24,6 @@ const typeSelect = document.getElementById('typeSelect');
 const toastContainer = document.getElementById('toastContainer');
 const bluffOverlay = document.getElementById('bluffOverlay');
 const bluffTitle = document.getElementById('bluffTitle');
-const revealedCards = document.getElementById('revealedCards');
 const bluffDetail = document.getElementById('bluffDetail');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
 const winnerText = document.getElementById('winnerText');
@@ -116,20 +115,6 @@ function renderHand() {
   sorted.forEach(card => {
     handArea.appendChild(renderCard(card, true));
   });
-}
-
-function renderCardSmall(card) {
-  const el = document.createElement('div');
-  el.className = 'card card-small';
-  if (card.isJoker) {
-    el.classList.add('card-joker');
-    el.innerHTML = `<div class="card-rank">Jkr</div><div class="card-suit joker-star">\u2605</div>`;
-  } else {
-    const color = SUIT_COLORS[card.suit];
-    el.classList.add(`card-${color}`);
-    el.innerHTML = `<div class="card-rank">${card.rank}</div><div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>`;
-  }
-  return el;
 }
 
 // ─── Opponent rendering ───
@@ -301,7 +286,7 @@ socket.on('full-circle', ({ currentPlayerName }) => {
   showToast(`All players passed. ${currentPlayerName} can discard or play more.`, 'warn');
 });
 
-socket.on('bluff-result', ({ callerName, accusedName, bluffDetected, revealedCards: cards, boardCardCount }) => {
+socket.on('bluff-result', ({ callerName, accusedName, bluffDetected, boardCardCount }) => {
   bluffOverlay.classList.remove('hidden');
 
   if (bluffDetected) {
@@ -313,10 +298,6 @@ socket.on('bluff-result', ({ callerName, accusedName, bluffDetected, revealedCar
     bluffTitle.className = 'bluff-fail';
     bluffDetail.textContent = `${accusedName} was telling the truth! ${callerName} picks up ${boardCardCount} cards.`;
   }
-
-  revealedCardsEl = document.getElementById('revealedCards');
-  revealedCardsEl.innerHTML = '';
-  cards.forEach(c => revealedCardsEl.appendChild(renderCardSmall(c)));
 
   setTimeout(() => {
     bluffOverlay.classList.add('hidden');
@@ -348,5 +329,88 @@ socket.on('connect', () => {
         setTimeout(() => { window.location.href = '/'; }, 2000);
       }
     });
+  }
+});
+
+// ─── Chat ───
+const chatToggle = document.getElementById('chatToggle');
+const chatPanel = document.getElementById('chatPanel');
+const chatClose = document.getElementById('chatClose');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const chatBadge = document.getElementById('chatBadge');
+
+let chatOpen = false;
+let unreadCount = 0;
+
+chatToggle.addEventListener('click', () => {
+  chatOpen = !chatOpen;
+  chatPanel.classList.toggle('hidden', !chatOpen);
+  chatToggle.classList.toggle('chat-toggle-active', chatOpen);
+  if (chatOpen) {
+    unreadCount = 0;
+    chatBadge.classList.add('hidden');
+    chatInput.focus();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+});
+
+chatClose.addEventListener('click', () => {
+  chatOpen = false;
+  chatPanel.classList.add('hidden');
+  chatToggle.classList.remove('chat-toggle-active');
+});
+
+function appendChatMessage(sender, text, isMine) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'chat-msg' + (isMine ? ' chat-msg-mine' : '');
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'chat-msg-name';
+  nameEl.textContent = sender;
+
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                  now.getMinutes().toString().padStart(2, '0');
+  const timeEl = document.createElement('span');
+  timeEl.className = 'chat-msg-time';
+  timeEl.textContent = timeStr;
+
+  const header = document.createElement('div');
+  header.className = 'chat-msg-header';
+  header.appendChild(nameEl);
+  header.appendChild(timeEl);
+
+  const body = document.createElement('div');
+  body.className = 'chat-msg-body';
+  body.textContent = text;
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(body);
+  chatMessages.appendChild(wrapper);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendChatMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  appendChatMessage(playerName, text, true);
+  socket.emit('chat-message', { roomCode, message: text });
+  chatInput.value = '';
+  chatInput.focus();
+}
+
+chatSend.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendChatMessage();
+});
+
+socket.on('chat-message', ({ sender, text }) => {
+  appendChatMessage(sender, text, false);
+  if (!chatOpen) {
+    unreadCount++;
+    chatBadge.textContent = unreadCount;
+    chatBadge.classList.remove('hidden');
   }
 });
