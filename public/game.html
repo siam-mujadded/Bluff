@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bluff - Game</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="game-body">
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Bluff reveal overlay -->
+  <div id="bluffOverlay" class="bluff-overlay hidden">
+    <div class="bluff-overlay-inner">
+      <h2 id="bluffTitle"></h2>
+      <div id="revealedCards" class="revealed-cards"></div>
+      <p id="bluffDetail"></p>
+    </div>
+  </div>
+
+  <!-- Game Over overlay -->
+  <div id="gameOverOverlay" class="game-over-overlay hidden">
+    <div class="game-over-inner">
+      <h1>Game Over</h1>
+      <p id="winnerText"></p>
+      <button class="btn btn-primary" onclick="window.location.href='/'">Back to Lobby</button>
+    </div>
+  </div>
+
+  <!-- Main game layout -->
+  <div class="game-wrapper">
+    <!-- Info bar -->
+    <div class="info-bar">
+      <div class="info-item">
+        <span class="info-label">Round Type:</span>
+        <span id="roundType" class="info-value">--</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Board:</span>
+        <span id="boardCount" class="info-value">0 cards</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Phase:</span>
+        <span id="phaseDisplay" class="info-value">--</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Turn:</span>
+        <span id="turnDisplay" class="info-value">--</span>
+      </div>
+    </div>
+
+    <!-- Table area with opponents and board -->
+    <div class="table-area">
+      <div id="opponents" class="opponents"></div>
+      <div class="board-area">
+        <div id="boardPile" class="board-pile">
+          <div class="board-pile-inner">
+            <span id="boardPileCount">0</span>
+          </div>
+        </div>
+        <div id="boardLabel" class="board-label">Board</div>
+      </div>
+    </div>
+
+    <!-- Player hand -->
+    <div class="hand-section">
+      <div id="handArea" class="hand-area"></div>
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <div id="newRoundControls" class="action-group hidden">
+        <select id="typeSelect" class="type-select">
+          <option value="">Choose type...</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="J">J</option>
+          <option value="Q">Q</option>
+          <option value="K">K</option>
+          <option value="A">A</option>
+        </select>
+        <button id="btnPlayNew" class="btn btn-primary">Play Cards</button>
+      </div>
+      <div id="inPlayControls" class="action-group hidden">
+        <button id="btnPlaySame" class="btn btn-primary">Play Cards</button>
+        <button id="btnCallBluff" class="btn btn-danger">Call Bluff</button>
+        <button id="btnPass" class="btn btn-secondary">Pass</button>
+      </div>
+      <div id="fullCircleControls" class="action-group hidden">
+        <button id="btnPlayCircle" class="btn btn-primary">Play More Cards</button>
+        <button id="btnDiscard" class="btn btn-accent">Discard Board</button>
+      </div>
+      <div id="waitingMsg" class="waiting-msg">Waiting for other players...</div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>

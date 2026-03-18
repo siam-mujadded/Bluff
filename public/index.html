@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bluff - Card Game</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="lobby-body">
+  <div class="lobby-container">
+    <!-- Landing -->
+    <div id="landing" class="panel">
+      <h1 class="game-title">BLUFF</h1>
+      <p class="subtitle">The Classic Card Game of Deception</p>
+      <div class="form-group">
+        <label for="playerName">Your Name</label>
+        <input type="text" id="playerName" maxlength="15" placeholder="Enter your name" autocomplete="off">
+      </div>
+      <div class="btn-row">
+        <button id="btnCreate" class="btn btn-primary">Create Room</button>
+        <button id="btnShowJoin" class="btn btn-secondary">Join Room</button>
+      </div>
+      <div id="joinSection" class="join-section hidden">
+        <div class="form-group">
+          <label for="roomCodeInput">Room Code</label>
+          <input type="text" id="roomCodeInput" maxlength="6" placeholder="e.g. ABC123" autocomplete="off" style="text-transform:uppercase">
+        </div>
+        <button id="btnJoin" class="btn btn-primary">Join</button>
+      </div>
+      <p id="landingError" class="error-msg hidden"></p>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waitingRoom" class="panel hidden">
+      <h2>Room: <span id="roomCodeDisplay" class="room-code"></span></h2>
+      <p class="copy-hint">Share this code with other players</p>
+      <div class="player-list-container">
+        <h3>Players</h3>
+        <ul id="playerList"></ul>
+      </div>
+      <p id="waitMsg" class="wait-msg">Waiting for players... (need 2-8)</p>
+      <button id="btnStart" class="btn btn-accent hidden">Start Game</button>
+      <p id="waitError" class="error-msg hidden"></p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/lobby.js"></script>
+</body>
+</html>
