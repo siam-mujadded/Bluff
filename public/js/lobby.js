@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io({ reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 2000 });
 
 const landing = document.getElementById('landing');
 const waitingRoom = document.getElementById('waitingRoom');
@@ -95,4 +95,24 @@ socket.on('game-started', () => {
   sessionStorage.setItem('bluff-room', currentRoomCode);
   sessionStorage.setItem('bluff-name', playerNameInput.value.trim());
   window.location.href = '/game';
+});
+
+socket.on('disconnect', () => {
+  if (currentRoomCode) {
+    showError(waitError, 'Lost connection to server. Reconnecting\u2026');
+  }
+});
+
+socket.on('connect', () => {
+  if (currentRoomCode) {
+    const name = playerNameInput.value.trim();
+    socket.emit('join-room', { roomCode: currentRoomCode, playerName: name }, (res) => {
+      if (res.error) {
+        showError(waitError, 'Room was lost (server restarted). Please create a new room.');
+        currentRoomCode = null;
+        waitingRoom.classList.add('hidden');
+        landing.classList.remove('hidden');
+      }
+    });
+  }
 });

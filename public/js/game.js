@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io({ reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 2000 });
 
 // State
 let myIndex = -1;
@@ -325,11 +325,17 @@ socket.on('connect', () => {
   if (roomCode && playerName) {
     socket.emit('rejoin-room', { roomCode, playerName }, (res) => {
       if (res.error) {
-        showToast('Could not rejoin: ' + res.error, 'error');
-        setTimeout(() => { window.location.href = '/'; }, 2000);
+        showToast('Room lost (server restarted). Returning to lobby\u2026', 'error');
+        sessionStorage.removeItem('bluff-room');
+        sessionStorage.removeItem('bluff-name');
+        setTimeout(() => { window.location.href = '/'; }, 2500);
       }
     });
   }
+});
+
+socket.on('disconnect', () => {
+  showToast('Connection lost. Reconnecting\u2026', 'error');
 });
 
 // ─── Chat ───

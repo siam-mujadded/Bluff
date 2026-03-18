@@ -121,5 +121,17 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/game.js"></script>
+  <script>
+    if (typeof io === 'undefined') {
+      document.body.innerHTML =
+        '<div style="display:flex;justify-content:center;align-items:center;min-height:100vh;background:#0a0a1a">' +
+        '<div style="text-align:center;font-family:sans-serif">' +
+        '<h2 style="color:#e6a817">Server is waking up\u2026</h2>' +
+        '<p style="color:#aaa;margin:12px 0 24px">Free-tier hosting takes a moment to start. Retrying automatically\u2026</p>' +
+        '<div style="margin:0 auto;width:36px;height:36px;border:3px solid #333;border-top-color:#e6a817;border-radius:50%;animation:spin .8s linear infinite"></div>' +
+        '<style>@keyframes spin{to{transform:rotate(360deg)}}</style></div></div>';
+      setTimeout(function(){ location.reload(); }, 4000);
+    }
+  </script>
 </body>
 </html>

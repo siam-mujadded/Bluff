@@ -46,5 +46,16 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/lobby.js"></script>
+  <script>
+    if (typeof io === 'undefined') {
+      document.querySelector('.lobby-container').innerHTML =
+        '<div class="panel" style="text-align:center">' +
+        '<h2 style="color:var(--gold)">Server is waking up\u2026</h2>' +
+        '<p style="color:#aaa;margin:12px 0 24px">Free-tier hosting takes a moment to start. Retrying automatically\u2026</p>' +
+        '<div style="margin:0 auto;width:36px;height:36px;border:3px solid #333;border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>' +
+        '<style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>';
+      setTimeout(function(){ location.reload(); }, 4000);
+    }
+  </script>
 </body>
 </html>
