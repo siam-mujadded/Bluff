@@ -19,6 +19,8 @@ app.get('/game', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'game.html'));
 });
 
+const roomTimers = new Map();
+
 function broadcastLobby(roomCode) {
   const room = roomManager.getRoom(roomCode);
   if (!room) return;
@@ -45,12 +47,69 @@ function sendAllHands(roomCode) {
   });
 }
 
+function restartTurnTimer(roomCode) {
+  clearTurnTimer(roomCode);
+  const room = roomManager.getRoom(roomCode);
+  if (!room || !room.turnTimeout || room.turnTimeout <= 0) return;
+  const gs = room.gameState;
+  if (!gs || gs.phase === 'GAME_OVER') return;
+
+  const deadline = Date.now() + room.turnTimeout * 1000;
+  gs.turnDeadline = deadline;
+
+  const timerId = setTimeout(() => {
+    handleTurnTimeout(roomCode);
+  }, room.turnTimeout * 1000);
+  roomTimers.set(roomCode, timerId);
+}
+
+function clearTurnTimer(roomCode) {
+  const id = roomTimers.get(roomCode);
+  if (id) { clearTimeout(id); roomTimers.delete(roomCode); }
+  const room = roomManager.getRoom(roomCode);
+  if (room && room.gameState) room.gameState.turnDeadline = null;
+}
+
+function handleTurnTimeout(roomCode) {
+  const room = roomManager.getRoom(roomCode);
+  if (!room || !room.gameState) return;
+  const gs = room.gameState;
+  if (gs.phase === 'GAME_OVER') return;
+
+  const idx = gs.currentPlayerIndex;
+  const pName = gs.players[idx].name;
+
+  if (gs.phase === 'FULL_CIRCLE' && idx === gs.lastPlayerIndex) {
+    const result = gameEngine.discardBoard(gs, idx);
+    if (result.success) {
+      io.to(roomCode).emit('board-discarded', { playerName: pName, discardedCount: result.discardedCount });
+    }
+  } else if (gs.phase === 'IN_PLAY') {
+    const result = gameEngine.pass(gs, idx);
+    if (result.success) {
+      io.to(roomCode).emit('player-passed', { playerName: pName });
+      if (result.event === 'full-circle') {
+        io.to(roomCode).emit('full-circle', {
+          currentPlayerIndex: result.currentPlayerIndex,
+          currentPlayerName: result.currentPlayerName,
+        });
+      }
+    }
+  } else if (gs.phase === 'NEW_ROUND') {
+    const next = gameEngine.getNextActivePlayer(gs.players, idx);
+    if (next === -1) { gs.phase = 'GAME_OVER'; }
+    else { gs.currentPlayerIndex = next; }
+  }
+
+  io.to(roomCode).emit('turn-timeout', { playerName: pName });
+  broadcastGameState(roomCode);
+  restartTurnTimer(roomCode);
+}
+
 io.on('connection', (socket) => {
 
   socket.on('create-room', ({ playerName }, cb) => {
-    if (!playerName || playerName.trim().length === 0) {
-      return cb({ error: 'Name is required' });
-    }
+    if (!playerName || playerName.trim().length === 0) return cb({ error: 'Name is required' });
     const room = roomManager.createRoom(socket.id, playerName.trim());
     socket.join(room.code);
     cb({ roomCode: room.code });
@@ -58,9 +117,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('join-room', ({ roomCode, playerName }, cb) => {
-    if (!playerName || playerName.trim().length === 0) {
-      return cb({ error: 'Name is required' });
-    }
+    if (!playerName || playerName.trim().length === 0) return cb({ error: 'Name is required' });
     if (!roomCode) return cb({ error: 'Room code is required' });
     const code = roomCode.toUpperCase().trim();
     const result = roomManager.joinRoom(code, socket.id, playerName.trim());
@@ -91,7 +148,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('start-game', ({ roomCode }, cb) => {
+  socket.on('start-game', ({ roomCode, turnTimeout }, cb) => {
     const room = roomManager.getRoom(roomCode);
     if (!room) return cb({ error: 'Room not found' });
     if (room.hostId !== socket.id) return cb({ error: 'Only host can start the game' });
@@ -99,25 +156,24 @@ io.on('connection', (socket) => {
     if (room.gameStarted) return cb({ error: 'Game already started' });
 
     room.gameStarted = true;
+    room.turnTimeout = (typeof turnTimeout === 'number' && turnTimeout > 0) ? turnTimeout : 0;
     room.gameState = gameEngine.createGameState(room.players);
 
     cb({ success: true });
     io.to(roomCode).emit('game-started', {});
     sendAllHands(roomCode);
     broadcastGameState(roomCode);
+    restartTurnTimer(roomCode);
   });
 
   socket.on('play-cards', ({ roomCode, cardIds, declaredType }) => {
     const room = roomManager.getRoom(roomCode);
     if (!room || !room.gameState) return;
-
     const playerIndex = room.gameState.players.findIndex(p => p.id === socket.id);
     if (playerIndex === -1) return;
 
     const result = gameEngine.playCards(room.gameState, playerIndex, cardIds, declaredType);
-    if (result.error) {
-      return socket.emit('action-error', { message: result.error });
-    }
+    if (result.error) return socket.emit('action-error', { message: result.error });
 
     io.to(roomCode).emit('cards-played', {
       playerName: result.playerName,
@@ -128,8 +184,10 @@ io.on('connection', (socket) => {
 
     sendAllHands(roomCode);
     broadcastGameState(roomCode);
+    restartTurnTimer(roomCode);
 
     if (result.gameOver) {
+      clearTurnTimer(roomCode);
       io.to(roomCode).emit('game-over', { winner: result.winner });
     }
   });
@@ -137,14 +195,11 @@ io.on('connection', (socket) => {
   socket.on('pass-turn', ({ roomCode }) => {
     const room = roomManager.getRoom(roomCode);
     if (!room || !room.gameState) return;
-
     const playerIndex = room.gameState.players.findIndex(p => p.id === socket.id);
     if (playerIndex === -1) return;
 
     const result = gameEngine.pass(room.gameState, playerIndex);
-    if (result.error) {
-      return socket.emit('action-error', { message: result.error });
-    }
+    if (result.error) return socket.emit('action-error', { message: result.error });
 
     if (result.event === 'full-circle') {
       io.to(roomCode).emit('player-passed', { playerName: result.playerName });
@@ -157,19 +212,19 @@ io.on('connection', (socket) => {
     }
 
     broadcastGameState(roomCode);
+    restartTurnTimer(roomCode);
   });
 
   socket.on('call-bluff', ({ roomCode }) => {
     const room = roomManager.getRoom(roomCode);
     if (!room || !room.gameState) return;
-
     const playerIndex = room.gameState.players.findIndex(p => p.id === socket.id);
     if (playerIndex === -1) return;
 
     const result = gameEngine.callBluff(room.gameState, playerIndex);
-    if (result.error) {
-      return socket.emit('action-error', { message: result.error });
-    }
+    if (result.error) return socket.emit('action-error', { message: result.error });
+
+    clearTurnTimer(roomCode);
 
     io.to(roomCode).emit('bluff-result', {
       callerName: result.callerName,
@@ -180,26 +235,30 @@ io.on('connection', (socket) => {
       winnerIndex: result.winnerIndex,
     });
 
+    const loserSocket = io.sockets.sockets.get(room.gameState.players[result.loserIndex].id);
+    if (loserSocket) {
+      loserSocket.emit('bluff-pickup', { cardIds: result.pickupCardIds });
+    }
+
     setTimeout(() => {
       sendAllHands(roomCode);
       broadcastGameState(roomCode);
       if (result.gameOver) {
         io.to(roomCode).emit('game-over', { winner: result.winner });
+      } else {
+        restartTurnTimer(roomCode);
       }
-    }, 3000);
+    }, 3500);
   });
 
   socket.on('discard-board', ({ roomCode }) => {
     const room = roomManager.getRoom(roomCode);
     if (!room || !room.gameState) return;
-
     const playerIndex = room.gameState.players.findIndex(p => p.id === socket.id);
     if (playerIndex === -1) return;
 
     const result = gameEngine.discardBoard(room.gameState, playerIndex);
-    if (result.error) {
-      return socket.emit('action-error', { message: result.error });
-    }
+    if (result.error) return socket.emit('action-error', { message: result.error });
 
     io.to(roomCode).emit('board-discarded', {
       playerName: result.playerName,
@@ -207,10 +266,34 @@ io.on('connection', (socket) => {
     });
 
     broadcastGameState(roomCode);
+    restartTurnTimer(roomCode);
 
     if (result.gameOver) {
+      clearTurnTimer(roomCode);
       io.to(roomCode).emit('game-over', { winner: result.winner });
     }
+  });
+
+  socket.on('change-timer', ({ roomCode, turnTimeout }) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room || !room.gameState) return;
+
+    let changerName = null;
+    const lobbyP = room.players.find(p => p.id === socket.id);
+    if (lobbyP) changerName = lobbyP.name;
+    if (!changerName && room.gameState) {
+      const gsP = room.gameState.players.find(p => p.id === socket.id);
+      if (gsP) changerName = gsP.name;
+    }
+    if (!changerName) return;
+
+    const newTimeout = (typeof turnTimeout === 'number' && turnTimeout >= 0) ? turnTimeout : 0;
+    room.turnTimeout = newTimeout;
+
+    io.to(roomCode).emit('timer-changed', { turnTimeout: newTimeout, changedBy: changerName });
+
+    restartTurnTimer(roomCode);
+    broadcastGameState(roomCode);
   });
 
   socket.on('chat-message', ({ roomCode, message }) => {
@@ -283,14 +366,11 @@ function autoPassDisconnected(roomCode, gs, playerIndex) {
     }
   } else if (gs.phase === 'NEW_ROUND') {
     const next = gameEngine.getNextActivePlayer(gs.players, playerIndex);
-    if (next === -1) {
-      gs.phase = 'GAME_OVER';
-    } else {
-      gs.currentPlayerIndex = next;
-      gs.phase = 'NEW_ROUND';
-    }
+    if (next === -1) { gs.phase = 'GAME_OVER'; }
+    else { gs.currentPlayerIndex = next; gs.phase = 'NEW_ROUND'; }
   }
   broadcastGameState(roomCode);
+  restartTurnTimer(roomCode);
 }
 
 const PORT = process.env.PORT || 3000;

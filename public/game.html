@@ -7,18 +7,16 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="game-body">
-  <!-- Toast container -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- Bluff reveal overlay -->
   <div id="bluffOverlay" class="bluff-overlay hidden">
     <div class="bluff-overlay-inner">
       <h2 id="bluffTitle"></h2>
       <p id="bluffDetail"></p>
+      <p id="bluffSarcasm" class="bluff-sarcasm"></p>
     </div>
   </div>
 
-  <!-- Game Over overlay -->
   <div id="gameOverOverlay" class="game-over-overlay hidden">
     <div class="game-over-inner">
       <h1>Game Over</h1>
@@ -27,47 +25,52 @@
     </div>
   </div>
 
-  <!-- Main game layout -->
   <div class="game-wrapper">
-    <!-- Info bar -->
     <div class="info-bar">
       <div class="info-item">
-        <span class="info-label">Round Type:</span>
+        <span class="info-label">Type:</span>
         <span id="roundType" class="info-value">--</span>
       </div>
       <div class="info-item">
         <span class="info-label">Board:</span>
-        <span id="boardCount" class="info-value">0 cards</span>
+        <span id="boardCount" class="info-value">0</span>
       </div>
       <div class="info-item">
         <span class="info-label">Phase:</span>
         <span id="phaseDisplay" class="info-value">--</span>
       </div>
+      <div class="info-item" id="timerItem">
+        <span class="info-label">Timer:</span>
+        <span id="timerDisplay" class="info-value">--</span>
+      </div>
       <div class="info-item">
-        <span class="info-label">Turn:</span>
-        <span id="turnDisplay" class="info-value">--</span>
+        <select id="gameTimerSelect" class="game-timer-select">
+          <option value="0">No Limit</option>
+          <option value="5">5s</option>
+          <option value="15">15s</option>
+          <option value="30">30s</option>
+          <option value="45">45s</option>
+          <option value="60">60s</option>
+          <option value="90">90s</option>
+        </select>
       </div>
     </div>
 
-    <!-- Table area with opponents and board -->
-    <div class="table-area">
-      <div id="opponents" class="opponents"></div>
-      <div class="board-area">
+    <div class="table-circle" id="tableCircle">
+      <div id="playerSeats" class="player-seats"></div>
+      <div class="board-center">
         <div id="boardPile" class="board-pile">
           <div class="board-pile-inner">
             <span id="boardPileCount">0</span>
           </div>
         </div>
-        <div id="boardLabel" class="board-label">Board</div>
       </div>
     </div>
 
-    <!-- Player hand -->
     <div class="hand-section">
       <div id="handArea" class="hand-area"></div>
     </div>
 
-    <!-- Action bar -->
     <div class="action-bar">
       <div id="newRoundControls" class="action-group hidden">
         <select id="typeSelect" class="type-select">
@@ -94,19 +97,17 @@
         <button id="btnPass" class="btn btn-secondary">Pass</button>
       </div>
       <div id="fullCircleControls" class="action-group hidden">
-        <button id="btnPlayCircle" class="btn btn-primary">Play More Cards</button>
+        <button id="btnPlayCircle" class="btn btn-primary">Play More</button>
         <button id="btnDiscard" class="btn btn-accent">Discard Board</button>
       </div>
       <div id="waitingMsg" class="waiting-msg">Waiting for other players...</div>
     </div>
   </div>
 
-  <!-- Chat toggle button -->
   <button id="chatToggle" class="chat-toggle">
     Chat <span id="chatBadge" class="chat-badge hidden">0</span>
   </button>
 
-  <!-- Chat panel -->
   <div id="chatPanel" class="chat-panel hidden">
     <div class="chat-header">
       <span>Chat</span>

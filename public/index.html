@@ -39,6 +39,18 @@
         <ul id="playerList"></ul>
       </div>
       <p id="waitMsg" class="wait-msg">Waiting for players... (need 2-8)</p>
+      <div class="timer-config">
+        <label for="turnTimeoutSelect">Turn Timer</label>
+        <select id="turnTimeoutSelect">
+          <option value="0" selected>No Limit</option>
+          <option value="5">5 seconds</option>
+          <option value="15">15 seconds</option>
+          <option value="30">30 seconds</option>
+          <option value="45">45 seconds</option>
+          <option value="60">60 seconds</option>
+          <option value="90">90 seconds</option>
+        </select>
+      </div>
       <button id="btnStart" class="btn btn-accent hidden">Start Game</button>
       <p id="waitError" class="error-msg hidden"></p>
     </div>

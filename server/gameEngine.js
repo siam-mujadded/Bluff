@@ -230,20 +230,20 @@ function callBluff(state, playerIndex) {
 
   if (checkForWinner(state)) {
     return {
-      success: true,
-      event: 'bluff-result',
-      callerName: caller.name,
-      callerIndex: playerIndex,
-      accusedName: accused.name,
-      accusedIndex,
-      bluffDetected,
-      revealedCards,
-      boardCardCount: boardCards.length,
-      loserIndex,
-      winnerIndex,
-      gameOver: true,
-      winner: state.winner,
-    };
+    success: true,
+    event: 'bluff-result',
+    callerName: caller.name,
+    callerIndex: playerIndex,
+    accusedName: accused.name,
+    accusedIndex,
+    bluffDetected,
+    boardCardCount: boardCards.length,
+    pickupCardIds: boardCards.map(c => c.id),
+    loserIndex,
+    winnerIndex,
+    gameOver: true,
+    winner: state.winner,
+  };
   }
 
   state.currentPlayerIndex = winnerIndex;
@@ -259,8 +259,8 @@ function callBluff(state, playerIndex) {
     accusedName: accused.name,
     accusedIndex,
     bluffDetected,
-    revealedCards,
     boardCardCount: boardCards.length,
+    pickupCardIds: boardCards.map(c => c.id),
     loserIndex,
     winnerIndex,
     newCurrentPlayerIndex: state.currentPlayerIndex,
@@ -318,6 +318,7 @@ function getPublicState(state) {
     lastPlayedCount: state.lastPlayedCards.length,
     dealerIndex: state.dealerIndex,
     winner: state.winner,
+    turnDeadline: state.turnDeadline || null,
     players: state.players.map(p => ({
       name: p.name,
       cardCount: p.hand.length,

@@ -14,6 +14,7 @@ const joinSection = document.getElementById('joinSection');
 const landingError = document.getElementById('landingError');
 const waitError = document.getElementById('waitError');
 const waitMsg = document.getElementById('waitMsg');
+const turnTimeoutSelect = document.getElementById('turnTimeoutSelect');
 
 let currentRoomCode = null;
 let isHost = false;
@@ -66,7 +67,8 @@ function enterWaitingRoom() {
 
 btnStart.addEventListener('click', () => {
   btnStart.disabled = true;
-  socket.emit('start-game', { roomCode: currentRoomCode }, (res) => {
+  const turnTimeout = parseInt(turnTimeoutSelect.value) || 0;
+  socket.emit('start-game', { roomCode: currentRoomCode, turnTimeout: turnTimeout }, (res) => {
     btnStart.disabled = false;
     if (res.error) return showError(waitError, res.error);
   });
