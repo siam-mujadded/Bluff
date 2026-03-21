@@ -93,6 +93,7 @@ function playCards(state, playerIndex, cardIds, declaredType) {
   }
 
   player.hand = player.hand.filter(c => !cardIds.includes(c.id));
+  cards.forEach(c => { c.playedBy = player.name; });
   state.board.push(...cards);
   state.lastPlayerIndex = playerIndex;
   state.lastPlayedCards = cards;
@@ -205,6 +206,9 @@ function callBluff(state, playerIndex) {
   const revealedCards = [...state.lastPlayedCards];
   const boardCards = [...state.board];
 
+  const pickupAttribution = {};
+  boardCards.forEach(c => { if (c.playedBy) pickupAttribution[c.id] = c.playedBy; });
+
   let loserIndex, winnerIndex;
 
   if (bluffDetected) {
@@ -216,6 +220,8 @@ function callBluff(state, playerIndex) {
     winnerIndex = accusedIndex;
     caller.hand.push(...state.board);
   }
+
+  boardCards.forEach(c => { delete c.playedBy; });
 
   state.board = [];
   state.lastPlayedCards = [];
@@ -239,6 +245,7 @@ function callBluff(state, playerIndex) {
     bluffDetected,
     boardCardCount: boardCards.length,
     pickupCardIds: boardCards.map(c => c.id),
+    pickupAttribution,
     loserIndex,
     winnerIndex,
     gameOver: true,
@@ -261,6 +268,7 @@ function callBluff(state, playerIndex) {
     bluffDetected,
     boardCardCount: boardCards.length,
     pickupCardIds: boardCards.map(c => c.id),
+    pickupAttribution,
     loserIndex,
     winnerIndex,
     newCurrentPlayerIndex: state.currentPlayerIndex,
@@ -280,6 +288,7 @@ function discardBoard(state, playerIndex) {
   }
 
   const discardedCount = state.board.length;
+  state.board.forEach(c => { delete c.playedBy; });
   state.discardedPile.push(...state.board);
   state.board = [];
   state.lastPlayedCards = [];

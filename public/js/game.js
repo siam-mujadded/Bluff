@@ -5,6 +5,7 @@ let myIndex = -1;
 let myHand = [];
 let selectedCardIds = new Set();
 let highlightedCardIds = new Set();
+let highlightedAttribution = {};
 let gameState = null;
 let roomCode = sessionStorage.getItem('bluff-room');
 let playerName = sessionStorage.getItem('bluff-name');
@@ -108,6 +109,12 @@ function renderCard(card, selectable) {
 
   if (highlightedCardIds.has(card.id)) {
     el.classList.add('card-highlighted');
+    if (highlightedAttribution[card.id]) {
+      var attr = document.createElement('div');
+      attr.className = 'card-attribution';
+      attr.textContent = highlightedAttribution[card.id];
+      el.appendChild(attr);
+    }
   }
 
   if (selectable) {
@@ -300,6 +307,7 @@ socket.on('game-state', function(state) {
 
   if (isMyTurn && !wasMyTurn && highlightedCardIds.size > 0) {
     highlightedCardIds.clear();
+    highlightedAttribution = {};
     renderHand();
   }
 
@@ -338,6 +346,7 @@ socket.on('bluff-result', function(data) {
 
 socket.on('bluff-pickup', function(data) {
   highlightedCardIds = new Set(data.cardIds);
+  highlightedAttribution = data.attribution || {};
 });
 
 socket.on('turn-timeout', function(data) {

@@ -237,7 +237,7 @@ io.on('connection', (socket) => {
 
     const loserSocket = io.sockets.sockets.get(room.gameState.players[result.loserIndex].id);
     if (loserSocket) {
-      loserSocket.emit('bluff-pickup', { cardIds: result.pickupCardIds });
+      loserSocket.emit('bluff-pickup', { cardIds: result.pickupCardIds, attribution: result.pickupAttribution });
     }
 
     setTimeout(() => {
